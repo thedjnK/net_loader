@@ -1,0 +1,2 @@
+/* Remove lfs_paritition from bootloader */
+/delete-node/ &lfs_partition;
