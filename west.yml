@@ -25,6 +25,7 @@ manifest:
       remote: thedjnK
       revision: main
     - name: mcuboot
+      path: bootloader/mcuboot
       remote: mcutools
       revision: pull/1780/head
 
