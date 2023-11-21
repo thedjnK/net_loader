@@ -2,6 +2,8 @@ manifest:
   remotes:
     - name: zephyr
       url-base: https://github.com/zephyrproject-rtos
+    - name: mcutools
+      url-base: https://github.com/mcu-tools
     - name: thedjnK
       url-base: https://github.com/thedjnK
 
@@ -13,16 +15,18 @@ manifest:
         name-allowlist:
           - cmsis
           - hal_nordic
-          - litmetal
+          - libmetal
           - littlefs
           - mbedtls
-          - mcuboot
           - openamp
           - tinycrypt
           - zcbor
     - name: boards
       remote: thedjnK
       revision: main
+    - name: mcuboot
+      remote: mcutools
+      revision: pull/1780/head
 
   self:
     path: net_loader
