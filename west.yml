@@ -27,7 +27,7 @@ manifest:
     - name: mcuboot
       path: bootloader/mcuboot
       remote: mcutools
-      revision: pull/1780/head
+      revision: 05d11942774fc15b90af101232ec5305051216ec
 
   self:
     path: net_loader
