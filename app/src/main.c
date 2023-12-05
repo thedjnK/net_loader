@@ -3,6 +3,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/retention/bootmode.h>
+#include <zephyr/mgmt/mcumgr/grp/img_mgmt/img_mgmt.h>
 #include <zephyr/mgmt/mcumgr/mgmt/mgmt.h>
 #include <zephyr/mgmt/mcumgr/mgmt/callbacks.h>
 
@@ -11,7 +12,32 @@
 #include <zephyr/net/net_core.h>
 #endif
 
+struct mgmt_callback smp_callback;
 struct mgmt_callback os_mgmt_callback;
+
+enum mgmt_cb_return smp_callback_function(uint32_t event, enum mgmt_cb_return prev_status,
+					  int32_t *rc, uint16_t *group, bool *abort_more,
+					  void *data, size_t data_size)
+{
+	if (event == MGMT_EVT_OP_CMD_RECV) {
+		struct mgmt_evt_op_cmd_arg *cmd_data = (struct mgmt_evt_op_cmd_arg *)data;
+
+/* TODO: deal with being unable to check if this is read or write */
+		if (cmd_data->group == MGMT_GROUP_ID_IMAGE && cmd_data->id == IMG_MGMT_ID_STATE) {
+			/*
+			 * Set state command, disallow use of command by returning a group error
+			 * code here where the error is actually 0 which, being success, will
+			 * skip adding it to the output
+			 */
+			*rc = IMG_MGMT_ERR_OK;
+			*group = MGMT_GROUP_ID_IMAGE;
+			return MGMT_CB_ERROR_ERR;
+		}
+	}
+
+	/* Return OK status code to continue with acceptance to underlying handler */
+	return MGMT_CB_OK;
+}
 
 enum mgmt_cb_return os_mgmt_callback_function(uint32_t event, enum mgmt_cb_return prev_status,
 					      int32_t *rc, uint16_t *group, bool *abort_more,
@@ -39,6 +65,11 @@ int main(void)
 	struct net_if *default_network_interface = net_if_get_default();
 	net_dhcpv4_start(default_network_interface);
 #endif
+
+	/* Setup SMP callbacks */
+	smp_callback.callback = smp_callback_function;
+	smp_callback.event_id = MGMT_EVT_OP_CMD_RECV;
+	mgmt_callback_register(&smp_callback);
 
 	/* Setup OS management callbacks */
 	os_mgmt_callback.callback = os_mgmt_callback_function;
