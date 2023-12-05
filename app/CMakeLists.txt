@@ -10,3 +10,4 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(net_loader)
 
 target_sources(app PRIVATE src/main.c)
+zephyr_link_libraries(MCUBOOT_BOOTUTIL)
