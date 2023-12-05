@@ -11,7 +11,7 @@ This relies upon mcuboot running the images directly from the slots, whereby slo
 
 ## Zephyr version
 
-This code targets Zephyr RTOS main branch, which is currently version 3.2.
+This code targets Zephyr RTOS main branch, which is currently version 3.5.99
 
 ## License
 
