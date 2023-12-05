@@ -18,16 +18,13 @@ manifest:
           - libmetal
           - littlefs
           - mbedtls
+          - mcuboot
           - openamp
           - tinycrypt
           - zcbor
     - name: boards
       remote: thedjnK
       revision: main
-    - name: mcuboot
-      path: bootloader/mcuboot
-      remote: mcutools
-      revision: 05d11942774fc15b90af101232ec5305051216ec
 
   self:
     path: net_loader
