@@ -1,8 +1,10 @@
 #include <stdio.h>
+#include <bootutil/bootutil_public.h>
 
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/retention/bootmode.h>
+#include <zephyr/dfu/mcuboot.h>
 #include <zephyr/mgmt/mcumgr/grp/img_mgmt/img_mgmt.h>
 #include <zephyr/mgmt/mcumgr/mgmt/mgmt.h>
 #include <zephyr/mgmt/mcumgr/mgmt/callbacks.h>
@@ -12,12 +14,32 @@
 #include <zephyr/net/net_core.h>
 #endif
 
-struct mgmt_callback smp_callback;
-struct mgmt_callback os_mgmt_callback;
+static struct mgmt_callback smp_callback;
+static struct mgmt_callback img_mgmt_callback;
+static struct mgmt_callback os_mgmt_callback;
+static bool received_image_pending = false;
 
-enum mgmt_cb_return smp_callback_function(uint32_t event, enum mgmt_cb_return prev_status,
-					  int32_t *rc, uint16_t *group, bool *abort_more,
-					  void *data, size_t data_size)
+static bool is_image_valid()
+{
+	struct mcuboot_img_header hdr;
+	struct boot_swap_state swap_state;
+
+	if (received_image_pending == false) {
+		return false;
+	} else if (boot_read_bank_header(FIXED_PARTITION_ID(slot1_partition), &hdr,
+					 sizeof(hdr)) != 0) {
+		return false;
+	} else if (boot_read_swap_state_by_id(FIXED_PARTITION_ID(slot1_partition),
+					      &swap_state) != 0) {
+		return false;
+	}
+
+	return true;
+}
+
+static enum mgmt_cb_return smp_callback_function(uint32_t event, enum mgmt_cb_return prev_status,
+						 int32_t *rc, uint16_t *group, bool *abort_more,
+						 void *data, size_t data_size)
 {
 	if (event == MGMT_EVT_OP_CMD_RECV) {
 		struct mgmt_evt_op_cmd_arg *cmd_data = (struct mgmt_evt_op_cmd_arg *)data;
@@ -39,18 +61,32 @@ enum mgmt_cb_return smp_callback_function(uint32_t event, enum mgmt_cb_return pr
 	return MGMT_CB_OK;
 }
 
-enum mgmt_cb_return os_mgmt_callback_function(uint32_t event, enum mgmt_cb_return prev_status,
-					      int32_t *rc, uint16_t *group, bool *abort_more,
-					      void *data, size_t data_size)
+static enum mgmt_cb_return img_mgmt_callback_function(uint32_t event,
+						      enum mgmt_cb_return prev_status, int32_t *rc,
+						      uint16_t *group, bool *abort_more,
+						      void *data, size_t data_size)
+{
+	if (event == MGMT_EVT_OP_IMG_MGMT_DFU_PENDING) {
+		received_image_pending = true;
+	}
+
+	/* Return OK status code to continue with acceptance to underlying handler */
+	return MGMT_CB_OK;
+}
+
+static enum mgmt_cb_return os_mgmt_callback_function(uint32_t event,
+						     enum mgmt_cb_return prev_status, int32_t *rc,
+						     uint16_t *group, bool *abort_more, void *data,
+						     size_t data_size)
 {
 	if (event == MGMT_EVT_OP_OS_MGMT_RESET) {
-/* TODO: Check if a valid image has been uploaded */
 		/*
 		 * Tell bootloader to load firmware loader image, this will actually run the
 		 * newly updated image once then reboot back into the net loader application
 		 */
-
-		int rc = bootmode_set(BOOT_MODE_TYPE_BOOTLOADER);
+		if (is_image_valid() == true) {
+			int rc = bootmode_set(BOOT_MODE_TYPE_BOOTLOADER);
+		}
 
 /* TODO: check status */
 	}
@@ -70,6 +106,11 @@ int main(void)
 	smp_callback.callback = smp_callback_function;
 	smp_callback.event_id = MGMT_EVT_OP_CMD_RECV;
 	mgmt_callback_register(&smp_callback);
+
+	/* Setup IMG management callbacks */
+	img_mgmt_callback.callback = img_mgmt_callback_function;
+	img_mgmt_callback.event_id = MGMT_EVT_OP_IMG_MGMT_DFU_PENDING;
+	mgmt_callback_register(&img_mgmt_callback);
 
 	/* Setup OS management callbacks */
 	os_mgmt_callback.callback = os_mgmt_callback_function;
