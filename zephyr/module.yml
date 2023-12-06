@@ -1,3 +1,5 @@
 build:
   kconfig: modules/Kconfig
   cmake: modules
+  sysbuild-cmake: sysbuild
+  sysbuild-kconfig: sysbuild/Kconfig

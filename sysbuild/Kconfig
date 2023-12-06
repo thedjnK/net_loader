@@ -1,0 +1,10 @@
+#
+# Copyright (C) 2023 Jamie M.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+config WATCHDOG_TIMEOUT_TIME
+        int "Watchdog timeout (seconds)"
+        range 10 7200
+        default 240
