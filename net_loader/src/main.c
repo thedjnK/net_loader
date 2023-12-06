@@ -11,6 +11,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/watchdog.h>
+#include <zephyr/net/net_if.h>
+#include <zephyr/net/net_core.h>
+#include <zephyr/net/net_context.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/retention/bootmode.h>
 #include <zephyr/dfu/mcuboot.h>
@@ -22,6 +25,9 @@
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_core.h>
 #endif
+
+/* Private network function */
+char *net_sprint_addr(sa_family_t af, const void *addr);
 
 static struct mgmt_callback smp_callback;
 static struct mgmt_callback img_mgmt_callback;
@@ -104,6 +110,36 @@ static enum mgmt_cb_return os_mgmt_callback_function(uint32_t event,
 	return MGMT_CB_OK;
 }
 
+static void show_ip_addresses()
+{
+	struct net_if *iface = net_if_get_default();
+	int i;
+
+#if defined(CONFIG_NET_IPV6)
+	if (net_if_flag_is_set(iface, NET_IF_IPV6)) {
+		for (i = 0; i < NET_IF_MAX_IPV6_ADDR; i++) {
+			if (!iface->config.ip.ipv6->unicast[i].is_used) {
+				continue;
+			}
+
+			printk("\t%s\n", net_sprint_addr(AF_INET6, &iface->config.ip.ipv6->unicast[i].address.in6_addr));
+		}
+	}
+#endif
+
+#if defined(CONFIG_NET_IPV4)
+	if (net_if_flag_is_set(iface, NET_IF_IPV4)) {
+		for (i = 0; i < NET_IF_MAX_IPV4_ADDR; i++) {
+			if (!iface->config.ip.ipv4->unicast[i].is_used) {
+				continue;
+			}
+
+			printk("\t%s\n", net_sprint_addr(AF_INET, &iface->config.ip.ipv4->unicast[i].address.in_addr));
+		}
+	}
+#endif
+}
+
 int main(void)
 {
 	const struct device *const wdt = DEVICE_DT_GET(DT_ALIAS(watchdog0));
@@ -129,7 +165,11 @@ int main(void)
 	os_mgmt_callback.event_id = MGMT_EVT_OP_OS_MGMT_RESET;
 	mgmt_callback_register(&os_mgmt_callback);
 
-	printk("Ready to receive firmware...");
+	printk("Ready to receive firmware... IPs:\n");
+
+	/* List IP addresses */
+	show_ip_addresses();
+/* TODO: should do this on mgmt event */
 
 	/* Feed watchdog when needed, this should be half the timeout time */
 	while (1) {
