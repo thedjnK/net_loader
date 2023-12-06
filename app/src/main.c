@@ -1,7 +1,15 @@
+/*
+ * Copyright (C) 2023 Jamie M.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include <stdio.h>
 #include <bootutil/bootutil_public.h>
 
 #include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/watchdog.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/retention/bootmode.h>
 #include <zephyr/dfu/mcuboot.h>
@@ -97,6 +105,7 @@ static enum mgmt_cb_return os_mgmt_callback_function(uint32_t event,
 
 int main(void)
 {
+	const struct device *const wdt = DEVICE_DT_GET(DT_ALIAS(watchdog0));
 #ifdef CONFIG_NET_DHCPV4
 	struct net_if *default_network_interface = net_if_get_default();
 	net_dhcpv4_start(default_network_interface);
@@ -118,5 +127,17 @@ int main(void)
 	mgmt_callback_register(&os_mgmt_callback);
 
 	printk("Ready to receive firmware...");
+
+	/* Feed watchdog when needed, this should be half the timeout time */
+	while (1) {
+		int rc = wdt_feed(wdt, 0);
+
+		if (rc) {
+			printk("Failed to feed watchdog: %d\n", rc);
+		}
+
+		k_sleep(K_SECONDS(CONFIG_WATCHDOG_FEED_TIME));
+	}
+
 	return 0;
 }
