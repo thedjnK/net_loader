@@ -1,3 +1,9 @@
+#
+# Copyright (C) 2023 Jamie M.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
 config MCUBOOT_WATCHDOG_SETUP
 	bool "Setup watchdog at boot"
 	default y
@@ -7,5 +13,4 @@ config MCUBOOT_WATCHDOG_SETUP
 config MCUBOOT_WATCHDOG_TIMEOUT
 	int "Watchdog timeout (seconds)"
 	range 10 7200
-	default 240
 	depends on MCUBOOT_WATCHDOG_SETUP
