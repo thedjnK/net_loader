@@ -8,3 +8,7 @@ config WATCHDOG_TIMEOUT_TIME
         int "Watchdog timeout (seconds)"
         range 10 7200
         default 240
+
+config NET_LOADER_IMAGE
+	bool "Include network loader image"
+	depends on BOOTLOADER_MCUBOOT
