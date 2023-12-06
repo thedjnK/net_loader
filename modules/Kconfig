@@ -9,3 +9,5 @@ if MCUBOOT
 rsource "mcuboot/Kconfig"
 
 endif
+
+rsource "watchdog/Kconfig"

@@ -1,0 +1,9 @@
+#
+# Copyright (C) 2023 Jamie M.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+config WATCHDOG_FEED_TIME
+	int "Watchdog feed time (seconds)"
+	range 5 3600
