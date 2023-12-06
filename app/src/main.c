@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <bootutil/bootutil_public.h>
+#include <app_version.h>
 
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
@@ -110,6 +111,8 @@ int main(void)
 	struct net_if *default_network_interface = net_if_get_default();
 	net_dhcpv4_start(default_network_interface);
 #endif
+
+	printk("Network loader firmware version %s\n", APP_VERSION_STRING);
 
 	/* Setup SMP callbacks */
 	smp_callback.callback = smp_callback_function;
